@@ -1,0 +1,24 @@
+#!/bin/bash
+
+cd ~ || exit 1
+if [ -d "linux-x86_64-gl" ]
+then
+    echo '"linux-x86_64-gl" directory already exists !'
+    exit 1
+fi
+
+export AR=ar
+export AS=gcc-8
+export CC=gcc-8
+export CXX=g++-8
+export LD=ld
+export RANLIB=ranlib
+export STRIP=strip
+
+(mkdir linux-x86_64-gl && cd linux-x86_64-gl && \
+    cmake .. -GNinja -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=./maplibre-native \
+    -DCMAKE_PREFIX_PATH=/opt/qt5-x86_64-gl/lib/cmake \
+    -DMLN_WITH_QT=ON && \
+    ninja &&
+    ninja install) || exit 1

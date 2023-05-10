@@ -1,0 +1,32 @@
+#!/bin/bash
+
+export AR=aarch64-linux-gnu-ar
+export AS=aarch64-linux-gnu-gcc
+export CC=aarch64-linux-gnu-gcc
+export CXX=aarch64-linux-gnu-g++
+export LD=aarch64-linux-gnu-ld
+export RANLIB=aarch64-linux-gnu-ranlib
+export STRIP=aarch64-linux-gnu-strip
+
+cd ~ || exit 1
+if [ -d "linux-arm64-gl" ]
+then
+    echo '"linux-arm64-gl" directory already exists !'
+    exit 1
+fi
+
+export AR=aarch64-linux-gnu-ar
+export AS=aarch64-linux-gnu-gcc-8
+export CC=aarch64-linux-gnu-gcc-8
+export CXX=aarch64-linux-gnu-g++-8
+export LD=aarch64-linux-gnu-ld
+export RANLIB=aarch64-linux-gnu-ranlib
+export STRIP=aarch64-linux-gnu-strip
+
+(mkdir linux-arm64-gl && cd linux-arm64-gl && \
+    cmake .. -GNinja -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=./maplibre-native \
+    -DCMAKE_PREFIX_PATH=/opt/qt5-arm64-gl/lib/cmake \
+    -DMLN_WITH_QT=ON && \
+    ninja &&
+    ninja install) || exit 1
