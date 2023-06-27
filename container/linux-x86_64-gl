@@ -19,6 +19,8 @@ export STRIP=strip
     cmake .. -GNinja -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=./maplibre-native \
     -DCMAKE_PREFIX_PATH=/opt/qt5-x86_64-gl/lib/cmake \
+    -DMLN_QT_WITH_INTERNAL_SQLITE=ON \
+    -DMLN_QT_WITH_INTERNAL_ICU=ON \
     -DMLN_WITH_QT=ON && \
     ninja &&
     ninja install) || exit 1
