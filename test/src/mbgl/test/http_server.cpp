@@ -176,7 +176,7 @@ void runServer(std::unique_ptr<httplib::Server>& server) {
     });
 
     server->Get("/delayed", [](const Request&, Response& res) {
-        usleep(200000);
+        //usleep(200000);
         res.status = 200;
         res.set_content("Response", "text/plain");
     });

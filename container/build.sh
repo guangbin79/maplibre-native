@@ -31,4 +31,9 @@ then
     sudo UID="${USER_ID}" GID="${GROUP_ID}" HOME="${HOME}" docker-compose run qt_arm64-compiler "${HOME}/container/linux-arm64-gles"
 fi
 
+if [[ $1 == 'windows-x86_64' || $1 == 'all' ]]
+then
+    sudo UID="${USER_ID}" GID="${GROUP_ID}" HOME="${HOME}" docker-compose run qt_win64-compiler "${HOME}/container/windows-x86_64"
+fi
+
 sudo UID="${USER_ID}" GID="${GROUP_ID}" HOME="${HOME}" docker-compose down

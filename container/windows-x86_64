@@ -1,0 +1,47 @@
+#!/bin/bash
+
+cd ~ || exit 1
+if [ -d "windows-x86_64" ]
+then
+    echo '"windows-x86_64" directory already exists !'
+    exit 1
+fi
+
+SYSTEM_NAME=Windows
+SYSTEM_PROCESSOR=x86_64
+SYSTEM_VERSION=7.0
+SYSROOT=/usr/lib/gcc/x86_64-w64-mingw32/10-posix
+export AR=$SYSTEM_PROCESSOR-w64-mingw32-ar
+export AS=$SYSTEM_PROCESSOR-w64-mingw32-as
+export CC=$SYSTEM_PROCESSOR-w64-mingw32-gcc
+export CXX=$SYSTEM_PROCESSOR-w64-mingw32-g++
+export LD=$SYSTEM_PROCESSOR-w64-mingw32-ld
+export RANLIB=$SYSTEM_PROCESSOR-w64-mingw32-ranlib
+export STRIP=$SYSTEM_PROCESSOR-w64-mingw32-strip
+export RC=$SYSTEM_PROCESSOR-w64-mingw32-windres
+
+#为同时支持win7、win10、win11使用msvcr120.dll/msvcr120d.dll代替msvcrt.dll/msvcrtd.dll
+#需要安装visual-c-2013-redistributable-package:
+#https://support.microsoft.com/en-us/topic/update-for-visual-c-2013-redistributable-package-d8ccd6a5-4e26-c290-517b-8da6cfdf4f10
+$SYSTEM_PROCESSOR-w64-mingw32-gcc -dumpspecs > "$HOME/c_compile.specs"
+sed -i 's/lmsvcrtd/lmsvcr120d/g' "$HOME/c_compile.specs"
+sed -i 's/lmsvcrt/lmsvcr120/g' "$HOME/c_compile.specs"
+$SYSTEM_PROCESSOR-w64-mingw32-g++ -dumpspecs > "$HOME/cxx_compile.specs"
+sed -i 's/lmsvcrtd/lmsvcr120d/g' "$HOME/cxx_compile.specs"
+sed -i 's/lmsvcrt/lmsvcr120/g' "$HOME/cxx_compile.specs"
+export CPPFLAGS=" -DCURL_STATICLIB -DZMQ_STATIC -DCZMQ_STATIC -DLIBXML_STATIC -DCPL_DISABLE_DLL -DASN1_STATIC -DCAIRO_WIN32_STATIC_BUILD -DXML_STATIC -DLZ4_STATIC_LINKING_ONLY -DLZ4_PUBLISH_STATIC_FUNCTIONS -DPCRE_STATIC -DWINVER=0x0601 -D_WIN32_WINNT=0x0601 -D_WIN32_WINDOWS=0x0601 -DWINAPI_FAMILY=0x3 -DIOWIN32_USING_WINRT_API=0 -DSQLITE_OS_WINRT=0 -DSQLITE_OS_WINCE=0 -DSQLITE_OS_WIN=1 -DSQLITE_OS_WINNT=1 -U__STRICT_ANSI__"
+export CFLAGS="$CFLAGS -specs=$HOME/c_compile.specs -fstack-protector $CPPFLAGS"
+export CXXFLAGS="$CXXFLAGS -specs=$HOME/cxx_compile.specs -fstack-protector $CPPFLAGS -fext-numeric-literals -Wno-error=format="
+export LDFLAGS=" -s -L/usr/x86_64-w64-mingw32/lib -L/usr/lib/gcc/x86_64-w64-mingw32/10-posix -L/opt/cross-library/windows/x86_64/lib"
+
+(mkdir windows-x86_64 && cd windows-x86_64 && \
+    cmake .. -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=./maplibre-native \
+    -DCMAKE_PREFIX_PATH=/opt/qt5-win64/lib/cmake \
+    -DCMAKE_C_STANDARD_LIBRARIES="$LDFLAGS -L/opt/cross-library/windows/x86_64/lib -lgetpid -lws2_32 -lcrypt32 -liphlpapi" \
+    -DCMAKE_CXX_STANDARD_LIBRARIES="$LDFLAGS -L/opt/cross-library/windows/x86_64/lib -lgetpid -lws2_32 -lcrypt32 -liphlpapi" \
+    -DMLN_QT_WITH_INTERNAL_SQLITE=ON \
+    -DMLN_QT_WITH_INTERNAL_ICU=ON \
+    -DMLN_WITH_QT=ON && \
+    make &&
+    make install) || exit 1

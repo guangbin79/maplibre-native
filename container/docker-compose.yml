@@ -1,7 +1,17 @@
 version: '2'
 services:
+  qt_win64-compiler:
+    image: 'qt_win64:v1.3'
+    container_name: qt_x86_64-compiler
+    user: "${UID}:${GID}"
+    environment:
+      HOME: "${HOME}"
+    volumes:
+      - "..:${HOME}"
+    tty: true
+    network_mode: host
   qt_x86_64-compiler:
-    image: 'qt_x86_64:v1.2'
+    image: 'qt_x86_64:v1.3'
     container_name: qt_x86_64-compiler
     user: "${UID}:${GID}"
     environment:
@@ -11,7 +21,7 @@ services:
     tty: true
     network_mode: host
   qt_arm64-compiler:
-    image: 'qt_arm64:v1.2'
+    image: 'qt_arm64:v1.3'
     container_name: qt_arm64-compiler
     user: "${UID}:${GID}"
     environment:
