@@ -2,7 +2,7 @@
 
 if [ $# != 1 ]
 then
-    echo "e.g.: $0 <linux-arm64-gl | linux-arm64-gles | linux-x86_64-gl | linux-x86_64-gles | all>"
+    echo "e.g.: $0 <linux-arm64-gl | linux-arm64-gles | linux-x86_64-gl | linux-x86_64-gles | windows-x86_64 | all>"
     exit 1
 fi
 

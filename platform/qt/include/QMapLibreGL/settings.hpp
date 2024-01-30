@@ -20,6 +20,7 @@ namespace QMapLibreGL {
 class Q_MAPLIBREGL_EXPORT Settings {
 public:
     Settings();
+    ~Settings();
 
     enum GLContextMode {
         UniqueGLContext = 0,

@@ -153,6 +153,9 @@ Settings::Settings()
       m_assetPath(QCoreApplication::applicationDirPath()),
       m_apiKey(qgetenv("MLN_API_KEY")),
       m_tileServerOptionsInternal(new mbgl::TileServerOptions(mbgl::TileServerOptions::DefaultConfiguration())) {}
+Settings::~Settings() {
+    delete m_tileServerOptionsInternal;
+}
 
 /*!
     Returns the OpenGL context mode. This is specially important when mixing

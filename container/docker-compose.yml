@@ -2,7 +2,7 @@ version: '2'
 services:
   qt_win64-compiler:
     image: 'qt_win64:v1.3'
-    container_name: qt_x86_64-compiler
+    container_name: qt_win64-compiler
     user: "${UID}:${GID}"
     environment:
       HOME: "${HOME}"
