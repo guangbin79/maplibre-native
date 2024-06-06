@@ -9,9 +9,9 @@ export RANLIB=aarch64-linux-gnu-ranlib
 export STRIP=aarch64-linux-gnu-strip
 
 cd ~ || exit 1
-if [ -d "linux-arm64-gles" ]
+if [ -d "linux-arm64" ]
 then
-    echo '"linux-arm64-gles" directory already exists !'
+    echo '"linux-arm64" directory already exists !'
     exit 1
 fi
 
@@ -23,13 +23,12 @@ export LD=aarch64-linux-gnu-ld
 export RANLIB=aarch64-linux-gnu-ranlib
 export STRIP=aarch64-linux-gnu-strip
 
-(mkdir linux-arm64-gles && cd linux-arm64-gles && \
+(mkdir linux-arm64 && cd linux-arm64 && \
     cmake .. -GNinja -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=./maplibre-native \
-    -DCMAKE_PREFIX_PATH=/opt/qt5-arm64-gles/lib/cmake \
+    -DCMAKE_PREFIX_PATH=/opt/qt5-arm64-gl/lib/cmake \
     -DMLN_QT_WITH_INTERNAL_SQLITE=ON \
     -DMLN_QT_WITH_INTERNAL_ICU=ON \
-    -DMLN_WITH_EGL=ON \
     -DMLN_WITH_QT=ON && \
     ninja &&
     ninja install) || exit 1

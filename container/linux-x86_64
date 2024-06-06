@@ -1,9 +1,9 @@
 #!/bin/bash
 
 cd ~ || exit 1
-if [ -d "linux-x86_64-gl" ]
+if [ -d "linux-x86_64" ]
 then
-    echo '"linux-x86_64-gl" directory already exists !'
+    echo '"linux-x86_64" directory already exists !'
     exit 1
 fi
 
@@ -15,7 +15,7 @@ export LD=ld
 export RANLIB=ranlib
 export STRIP=strip
 
-(mkdir linux-x86_64-gl && cd linux-x86_64-gl && \
+(mkdir linux-x86_64 && cd linux-x86_64 && \
     cmake .. -GNinja -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=./maplibre-native \
     -DCMAKE_PREFIX_PATH=/opt/qt5-x86_64-gl/lib/cmake \

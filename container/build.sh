@@ -2,7 +2,7 @@
 
 if [ $# != 1 ]
 then
-    echo "e.g.: $0 <linux-arm64-gl | linux-arm64-gles | linux-x86_64-gl | linux-x86_64-gles | windows-x86_64 | all>"
+    echo "e.g.: $0 <linux-arm64 | linux-arm64-egl | linux-x86_64 | linux-x86_64-egl | windows-x86_64 | all>"
     exit 1
 fi
 
@@ -11,24 +11,24 @@ cd "${PROJ_DIR}" || exit 1
 USER_ID=$(id -u)
 GROUP_ID=$(id -g)
 
-if [[ $1 == 'linux-x86_64-gl' || $1 == 'all' ]]
+if [[ $1 == 'linux-x86_64' || $1 == 'all' ]]
 then
-    sudo UID="${USER_ID}" GID="${GROUP_ID}" HOME="${HOME}" docker-compose run qt_x86_64-compiler "${HOME}/container/linux-x86_64-gl"
+    sudo UID="${USER_ID}" GID="${GROUP_ID}" HOME="${HOME}" docker-compose run qt_x86_64-compiler "${HOME}/container/linux-x86_64"
 fi
 
-if [[ $1 == 'linux-x86_64-gles' || $1 == 'all' ]]
+if [[ $1 == 'linux-x86_64-egl' || $1 == 'all' ]]
 then
-    sudo UID="${USER_ID}" GID="${GROUP_ID}" HOME="${HOME}" docker-compose run qt_x86_64-compiler "${HOME}/container/linux-x86_64-gles"
+    sudo UID="${USER_ID}" GID="${GROUP_ID}" HOME="${HOME}" docker-compose run qt_x86_64-compiler "${HOME}/container/linux-x86_64-egl"
 fi
 
-if [[ $1 == 'linux-arm64-gl' || $1 == 'all' ]]
+if [[ $1 == 'linux-arm64' || $1 == 'all' ]]
 then
-    sudo UID="${USER_ID}" GID="${GROUP_ID}" HOME="${HOME}" docker-compose run qt_arm64-compiler "${HOME}/container/linux-arm64-gl"
+    sudo UID="${USER_ID}" GID="${GROUP_ID}" HOME="${HOME}" docker-compose run qt_arm64-compiler "${HOME}/container/linux-arm64"
 fi
 
-if [[ $1 == 'linux-arm64-gles' || $1 == 'all' ]]
+if [[ $1 == 'linux-arm64-egl' || $1 == 'all' ]]
 then
-    sudo UID="${USER_ID}" GID="${GROUP_ID}" HOME="${HOME}" docker-compose run qt_arm64-compiler "${HOME}/container/linux-arm64-gles"
+    sudo UID="${USER_ID}" GID="${GROUP_ID}" HOME="${HOME}" docker-compose run qt_arm64-compiler "${HOME}/container/linux-arm64-egl"
 fi
 
 if [[ $1 == 'windows-x86_64' || $1 == 'all' ]]
