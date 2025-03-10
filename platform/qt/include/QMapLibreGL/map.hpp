@@ -91,7 +91,9 @@ public:
     void setZoom(double zoom);
 
     double minimumZoom() const;
+    void setMinimumZoom(double zoom);
     double maximumZoom() const;
+    void setMaximumZoom(double zoom);
 
     double bearing() const;
     void setBearing(double degrees);
@@ -166,6 +168,8 @@ public:
     void setFramebufferObject(quint32 fbo, const QSize &size);
 
     const QVector<QPair<QString, QString>> &defaultStyles() const;
+
+    void reduceMemoryUse();
 
 public slots:
     void render();

@@ -45,6 +45,8 @@ public:
     std::unique_ptr<mbgl::Map> mapObj{};
     QVector<QPair<QString, QString>> defaultStyles;
 
+    void reduceMemoryUse();
+
 public slots:
     void requestRendering();
 

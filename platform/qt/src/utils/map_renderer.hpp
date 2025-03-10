@@ -37,6 +37,8 @@ public:
     // Thread-safe, called by the Frontend
     void updateParameters(std::shared_ptr<mbgl::UpdateParameters>);
 
+    void reduceMemoryUse();
+
 signals:
     void needsRendering();
 

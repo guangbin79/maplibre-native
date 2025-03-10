@@ -97,4 +97,8 @@ void MapRenderer::setObserver(std::shared_ptr<mbgl::RendererObserver> observer) 
     m_renderer->setObserver(observer.get());
 }
 
+void MapRenderer::reduceMemoryUse() {
+    m_renderer->reduceMemoryUse();
+}
+
 } // namespace QMapLibreGL

@@ -448,6 +448,10 @@ double Map::minimumZoom() const {
     return *d_ptr->mapObj->getBounds().minZoom;
 }
 
+void Map::setMinimumZoom(double zoom) {
+    d_ptr->mapObj->setBounds(mbgl::BoundOptions().withMinZoom(zoom));
+}
+
 /*!
     Returns the maximum zoom level allowed for the map.
 
@@ -455,6 +459,10 @@ double Map::minimumZoom() const {
 */
 double Map::maximumZoom() const {
     return *d_ptr->mapObj->getBounds().maxZoom;
+}
+
+void Map::setMaximumZoom(double zoom) {
+    d_ptr->mapObj->setBounds(mbgl::BoundOptions().withMaxZoom(zoom));
 }
 
 /*!
@@ -1269,6 +1277,10 @@ const QVector<QPair<QString, QString>> &Map::defaultStyles() const {
     return d_ptr->defaultStyles;
 }
 
+void Map::reduceMemoryUse() {
+    d_ptr->reduceMemoryUse();
+}
+
 /*!
     \fn void QMapLibreGL::Map::needsRendering()
 
@@ -1409,6 +1421,10 @@ void MapPrivate::createRenderer() {
         m_mapRenderer->updateParameters(m_updateParameters);
         requestRendering();
     }
+}
+
+void MapPrivate::reduceMemoryUse() {
+    m_mapRenderer->reduceMemoryUse();
 }
 
 void MapPrivate::destroyRenderer() {
