@@ -30,3 +30,13 @@ services:
       - "..:${HOME}"
     tty: true
     network_mode: host
+  qt_mips64el-compiler:
+    image: 'qt_mips64el:v1.3'
+    container_name: qt_mips64el-compiler
+    user: "${UID}:${GID}"
+    environment:
+      HOME: "${HOME}"
+    volumes:
+      - "..:${HOME}"
+    tty: true
+    network_mode: host

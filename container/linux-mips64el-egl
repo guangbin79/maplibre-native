@@ -1,0 +1,37 @@
+#!/bin/bash
+
+export AR=mips64el-linux-gnuabi64-ar
+export CC=mips64el-linux-gnuabi64-gcc
+export AS=mips64el-linux-gnuabi64-gcc
+export CXX=mips64el-linux-gnuabi64-g++
+export LD=mips64el-linux-gnuabi64-ld
+export RANLIB=mips64el-linux-gnuabi64-ranlib
+export STRIP=mips64el-linux-gnuabi64-strip
+
+cd ~ || exit 1
+if [ -d "linux-mips64el-egl" ]
+then
+    echo '"linux-mips64el-egl" directory already exists !'
+    exit 1
+fi
+
+export AR=mips64el-linux-gnuabi64-ar
+export CC=mips64el-linux-gnuabi64-gcc
+export AS=mips64el-linux-gnuabi64-gcc
+export CXX=mips64el-linux-gnuabi64-g++
+export LD=mips64el-linux-gnuabi64-ld
+export RANLIB=mips64el-linux-gnuabi64-ranlib
+export STRIP=mips64el-linux-gnuabi64-strip
+
+patch -p1 < container/mips64el.patch
+
+(mkdir linux-mips64el-egl && cd linux-mips64el-egl && \
+    cmake .. -GNinja -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=./maplibre-native \
+    -DCMAKE_PREFIX_PATH=/opt/qt5-mips64el-gl/lib/cmake \
+    -DMLN_QT_WITH_INTERNAL_SQLITE=ON \
+    -DMLN_QT_WITH_INTERNAL_ICU=ON \
+    -DMLN_WITH_EGL=ON \
+    -DMLN_WITH_QT=ON && \
+    ninja &&
+    ninja install) || exit 1

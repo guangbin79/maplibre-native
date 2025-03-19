@@ -31,6 +31,11 @@ then
     sudo UID="${USER_ID}" GID="${GROUP_ID}" HOME="${HOME}" docker-compose run qt_arm64-compiler "${HOME}/container/linux-arm64-egl"
 fi
 
+if [[ $1 == 'linux-mips64el-egl' || $1 == 'all' ]]
+then
+    sudo UID="${USER_ID}" GID="${GROUP_ID}" HOME="${HOME}" docker-compose run qt_mips64el-compiler "${HOME}/container/linux-mips64el-egl"
+fi
+
 if [[ $1 == 'windows-x86_64' || $1 == 'all' ]]
 then
     sudo UID="${USER_ID}" GID="${GROUP_ID}" HOME="${HOME}" docker-compose run qt_win64-compiler "${HOME}/container/windows-x86_64"
