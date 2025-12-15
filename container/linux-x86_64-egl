@@ -22,6 +22,7 @@ export STRIP=strip
     -DMLN_QT_WITH_INTERNAL_SQLITE=ON \
     -DMLN_QT_WITH_INTERNAL_ICU=ON \
     -DMLN_WITH_EGL=ON \
+    -DMLN_WITH_RTTI=ON \
     -DMLN_WITH_QT=ON && \
     ninja &&
     ninja install) || exit 1
