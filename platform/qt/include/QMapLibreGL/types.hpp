@@ -7,6 +7,8 @@
 #include <QVariant>
 #include <QVector>
 
+#include <array>
+
 #include "export.hpp"
 
 namespace QMapLibreGL {
@@ -112,7 +114,7 @@ struct Q_MAPLIBREGL_EXPORT CameraOptions {
     QVariant pitch;   // double
 };
 
-// This struct is a 1:1 copy of mbgl::CustomLayerRenderParameters.
+// Mirrors mbgl::CustomLayerRenderParameters (projectionMatrix forwarded).
 struct Q_MAPLIBREGL_EXPORT CustomLayerRenderParameters {
     double width;
     double height;
@@ -122,6 +124,7 @@ struct Q_MAPLIBREGL_EXPORT CustomLayerRenderParameters {
     double bearing;
     double pitch;
     double fieldOfView;
+    std::array<double, 16> projectionMatrix;
 };
 
 class Q_MAPLIBREGL_EXPORT CustomLayerHostInterface {

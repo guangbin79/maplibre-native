@@ -57,6 +57,7 @@
 #include <QVariantList>
 #include <QVariantMap>
 
+#include <algorithm>
 #include <functional>
 #include <memory>
 #include <sstream>
@@ -1000,6 +1001,9 @@ void Map::addCustomLayer(const QString &id, std::unique_ptr<CustomLayerHostInter
             renderParams.bearing = params.bearing;
             renderParams.pitch = params.pitch;
             renderParams.fieldOfView = params.fieldOfView;
+            std::copy(std::begin(params.projectionMatrix),
+                      std::end(params.projectionMatrix),
+                      std::begin(renderParams.projectionMatrix));
             ptr->render(renderParams);
         }
 
