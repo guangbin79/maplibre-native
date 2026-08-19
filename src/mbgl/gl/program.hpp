@@ -23,6 +23,18 @@
 namespace mbgl {
 namespace gl {
 
+namespace detail {
+// Every attribute engaged; input for eager shader warmup. See Program::warmup.
+template <class>
+struct AllBound;
+template <class... As>
+struct AllBound<TypeList<As...>> {
+    static gfx::AttributeBindings<TypeList<As...>> value() {
+        return {ExpandToType<As, gfx::AttributeBinding>{}...};
+    }
+};
+} // namespace detail
+
 template <class Name>
 class Program final : public gfx::Program<Name> {
 public:
@@ -97,23 +109,15 @@ public:
         context.setColorMode(colorMode);
         context.setCullFaceMode(cullFaceMode);
 
-        const uint32_t key = gl::AttributeKey<AttributeList>::compute(attributeBindings);
-        auto it = instances.find(key);
-        if (it == instances.end()) {
-            try {
-                it = instances
-                         .emplace(key,
-                                  Instance::createInstance(context,
-                                                           programParameters,
-                                                           gl::AttributeKey<AttributeList>::defines(attributeBindings)))
-                         .first;
-            } catch (const std::runtime_error& e) {
-                Log::Error(Event::OpenGL, e.what());
-                return;
-            }
+        Instance* instancePtr = nullptr;
+        try {
+            instancePtr = &instanceFor(context, attributeBindings);
+        } catch (const std::runtime_error& e) {
+            Log::Error(Event::OpenGL, e.what());
+            return;
         }
+        auto& instance = *instancePtr;
 
-        auto& instance = *it->second;
         context.program = instance.program;
 
         instance.uniformStates.bind(uniformValues);
@@ -126,7 +130,41 @@ public:
         context.draw(drawMode, indexOffset, indexLength);
     }
 
+    // eager warmup: first-drag jank — HXMapWidgetNative black-flash campaign; upstream analog: Metal pipeline cache PR #2379
+    void warmup(gfx::Context& genericContext) {
+        auto& context = static_cast<gl::Context&>(genericContext);
+
+        const gfx::AttributeBindings<AttributeList> noAttributes;
+        const gfx::AttributeBindings<AttributeList> allAttributes = detail::AllBound<AttributeList>::value();
+
+        for (const auto* bindings : {&noAttributes, &allAttributes}) {
+            try {
+                auto& instance = instanceFor(context, *bindings);
+                // One-time use forces driver-side pipeline finalization
+                context.program = instance.program;
+            } catch (const std::exception& e) {
+                Log::Error(Event::OpenGL, std::string("shader warmup failed: ") + e.what());
+            } catch (...) {
+                Log::Error(Event::OpenGL, "shader warmup failed");
+            }
+        }
+    }
+
 private:
+    Instance& instanceFor(Context& context, const gfx::AttributeBindings<AttributeList>& attributeBindings) {
+        const uint32_t key = gl::AttributeKey<AttributeList>::compute(attributeBindings);
+        auto it = instances.find(key);
+        if (it == instances.end()) {
+            it = instances
+                     .emplace(key,
+                              Instance::createInstance(context,
+                                                       programParameters,
+                                                       gl::AttributeKey<AttributeList>::defines(attributeBindings)))
+                     .first;
+        }
+        return *it->second;
+    }
+
     std::map<uint32_t, std::unique_ptr<Instance>> instances;
 };
 

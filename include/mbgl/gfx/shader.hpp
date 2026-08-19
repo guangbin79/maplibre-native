@@ -6,6 +6,7 @@
 namespace mbgl {
 namespace gfx {
 
+class Context;
 class Shader;
 
 // Assert that a type is a valid shader for downcasting.
@@ -27,6 +28,13 @@ public:
     /// @brief Get the type name of this shader
     /// @return Shader type name
     virtual const std::string_view typeName() const noexcept = 0;
+
+    /// @brief Eagerly perform backend-specific initialization (e.g. compile
+    /// and link shader program variants) outside of the render loop, to
+    /// avoid first-use stalls during interaction.
+    /// @param context The graphics context to initialize against
+    /// @return True if initialization work was performed
+    virtual bool warmup(gfx::Context&) noexcept { return false; }
 
     /// @brief Downcast to a type
     /// @tparam T Derived type

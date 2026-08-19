@@ -278,6 +278,16 @@ public:
         }
     }
 
+    bool warmup(gfx::Context& context) noexcept override {
+#ifdef MBGL_RENDER_BACKEND_OPENGL
+        if (gfx::Backend::GetType() == gfx::Backend::Type::OpenGL && program) {
+            static_cast<gl::Program<Name>&>(*program).warmup(context);
+            return true;
+        }
+#endif
+        return false;
+    }
+
     static UniformValues computeAllUniformValues(const LayoutUniformValues& layoutUniformValues,
                                                  const SymbolSizeBinder& symbolSizeBinder,
                                                  const Binders& paintPropertyBinders,

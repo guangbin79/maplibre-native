@@ -2,6 +2,7 @@
 
 #include <mbgl/gfx/shader.hpp>
 
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
@@ -66,6 +67,10 @@ public:
     /// @return True if the shader was registered, false if another shader is
     /// already present with a conflicting name.
     [[nodiscard]] virtual bool registerShader(std::shared_ptr<Shader>&& shader, const std::string& shaderName) noexcept;
+
+    /// @brief Invoke the provided function for each registered shader.
+    /// @param functor Function invoked with each registered shader instance
+    virtual void visitShaders(const std::function<void(const std::shared_ptr<Shader>&)>& functor) const;
 
     /// @brief Shorthand helper to quickly get a derived type from the registry.
     /// @tparam T Derived type, inheriting `gfx::Shader`

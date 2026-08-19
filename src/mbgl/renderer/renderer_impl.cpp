@@ -53,6 +53,10 @@ void Renderer::Impl::render(const RenderTree& renderTree) {
         staticData = std::make_unique<RenderStaticData>(pixelRatio, std::make_unique<gfx::ShaderRegistry>());
         staticData->programs.registerWith(*staticData->shaders);
         observer->onRegisterShaders(*staticData->shaders);
+
+        // eager warmup: first-drag jank — HXMapWidgetNative black-flash campaign; upstream analog: Metal pipeline cache PR #2379
+        staticData->shaders->visitShaders(
+            [this](const std::shared_ptr<gfx::Shader>& shader) { shader->warmup(backend.getContext()); });
     }
     staticData->has3D = renderTreeParameters.has3D;
 

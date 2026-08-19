@@ -49,5 +49,12 @@ bool ShaderRegistry::registerShader(std::shared_ptr<Shader>&& shader, const std:
     return true;
 }
 
+void ShaderRegistry::visitShaders(const std::function<void(const std::shared_ptr<Shader>&)>& functor) const {
+    std::shared_lock<std::shared_mutex> readerLock(programLock);
+    for (const auto& shader : programs) {
+        functor(shader.second);
+    }
+}
+
 } // namespace gfx
 } // namespace mbgl
