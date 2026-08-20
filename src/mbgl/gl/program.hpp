@@ -19,6 +19,7 @@
 #include <mbgl/shaders/shader_manifest.hpp>
 
 #include <string>
+#include <utility> // std::index_sequence (per-attribute warmup)
 
 namespace mbgl {
 namespace gl {
@@ -31,6 +32,22 @@ template <class... As>
 struct AllBound<TypeList<As...>> {
     static gfx::AttributeBindings<TypeList<As...>> value() {
         return {ExpandToType<As, gfx::AttributeBinding>{}...};
+    }
+};
+
+// Exactly attribute I missing, all others engaged — mixed-mask warmup variant.
+// Mid-drag, a single data-driven attribute flips buffer-backed -> uniform-backed while
+// the rest stay buffer-backed; per-single-missing is the minimal covering set for those
+// masks (the high-frequency shape in real styles). Double-missing combos (2^N) are NOT
+// enumerated — residual risk, see warmup().
+template <size_t, class>
+struct OneMissing;
+template <size_t I, class... As>
+struct OneMissing<I, TypeList<As...>> {
+    static gfx::AttributeBindings<TypeList<As...>> value() {
+        return {(TypeIndex<As, As...>::value == I
+                     ? std::optional<gfx::AttributeBinding>()
+                     : std::optional<gfx::AttributeBinding>(gfx::AttributeBinding{}))...};
     }
 };
 } // namespace detail
@@ -131,6 +148,13 @@ public:
     }
 
     // eager warmup: first-drag jank — HXMapWidgetNative black-flash campaign; upstream analog: Metal pipeline cache PR #2379
+    // v2: also warms per-attribute-missing masks (exactly attribute i uniform-backed, rest
+    // buffer-backed) — the mixed shape hit when one data-driven property flips mid-drag
+    // (session 27: v1's 2 canonical variants still stalled 1/3 rounds).
+    // Cost: (2 + N) instances x ~27 programs = 150-270 one-time compiles, ~0.5-1 s during
+    // style load — user-invisible, runs once, results cached in `instances`.
+    // Residual: double-missing masks (2^N) un-enumerated; if stalls persist after v2,
+    // escalate to full style-static-analysis variant enumeration (expensive, decide then).
     void warmup(gfx::Context& genericContext) {
         auto& context = static_cast<gl::Context&>(genericContext);
 
@@ -138,19 +162,34 @@ public:
         const gfx::AttributeBindings<AttributeList> allAttributes = detail::AllBound<AttributeList>::value();
 
         for (const auto* bindings : {&noAttributes, &allAttributes}) {
-            try {
-                auto& instance = instanceFor(context, *bindings);
-                // One-time use forces driver-side pipeline finalization
-                context.program = instance.program;
-            } catch (const std::exception& e) {
-                Log::Error(Event::OpenGL, std::string("shader warmup failed: ") + e.what());
-            } catch (...) {
-                Log::Error(Event::OpenGL, "shader warmup failed");
-            }
+            warmBindings(context, *bindings);
         }
+        warmPerMissing(context, AttributeList{});
     }
 
 private:
+    void warmBindings(gl::Context& context, const gfx::AttributeBindings<AttributeList>& bindings) {
+        try {
+            auto& instance = instanceFor(context, bindings);
+            // One-time use forces driver-side pipeline finalization
+            context.program = instance.program;
+        } catch (const std::exception& e) {
+            Log::Error(Event::OpenGL, std::string("shader warmup failed: ") + e.what());
+        } catch (...) {
+            Log::Error(Event::OpenGL, "shader warmup failed");
+        }
+    }
+
+    template <class... As>
+    void warmPerMissing(gl::Context& context, TypeList<As...>) {
+        warmPerMissing(context, std::make_index_sequence<sizeof...(As)>{}, TypeList<As...>{});
+    }
+
+    template <size_t... Is, class... As>
+    void warmPerMissing(gl::Context& context, std::index_sequence<Is...>, TypeList<As...>) {
+        util::ignore({(warmBindings(context, detail::OneMissing<Is, TypeList<As...>>::value()), 0)...});
+    }
+
     Instance& instanceFor(Context& context, const gfx::AttributeBindings<AttributeList>& attributeBindings) {
         const uint32_t key = gl::AttributeKey<AttributeList>::compute(attributeBindings);
         auto it = instances.find(key);
