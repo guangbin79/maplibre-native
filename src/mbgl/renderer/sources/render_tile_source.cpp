@@ -82,14 +82,20 @@ bool RenderTileSource::hasFadingTiles() const {
 
 RenderTiles RenderTileSource::getRenderTiles() const {
     if (!filteredRenderTiles) {
-        auto result = std::make_shared<std::vector<std::reference_wrapper<const RenderTile>>>();
+        // Ownership pin: RenderTiles owns only the wrapper vector, not the
+        // RenderTile storage (owned by the `renderTiles` Immutable member).
+        // A layer caches the returned vector across frames while prepare()
+        // swaps `renderTiles` — the wrapper targets would dangle. The deleter
+        // captures the Immutable copy so storage lives as long as any holder.
+        auto owner = renderTiles;
+        auto* raw = new std::vector<std::reference_wrapper<const RenderTile>>();
         for (const auto& renderTile : *renderTiles) {
             if (renderTile.holdForFade()) {
                 continue;
             }
-            result->emplace_back(renderTile);
+            raw->emplace_back(renderTile);
         }
-        filteredRenderTiles = std::move(result);
+        filteredRenderTiles = RenderTiles(raw, [owner](auto* p) { delete p; });
     }
     return filteredRenderTiles;
 }
@@ -106,13 +112,18 @@ RenderTiles RenderTileSource::getRenderTilesSortedByYPosition() const {
             return std::tie(b.id.canonical.z, par.y, par.x) < std::tie(a.id.canonical.z, pbr.y, pbr.x);
         };
 
-        auto result = std::make_shared<std::vector<std::reference_wrapper<const RenderTile>>>();
-        result->reserve(renderTiles->size());
+        // Ownership pin: same lifetime hole as getRenderTiles() — sort below
+        // dereferences every wrapper; without the pin a cross-frame Immutable
+        // swap frees the storage mid-use (SIGSEGV in introsort, observed on
+        // Phytium D3000M after ~70min sim-nav camera follow).
+        auto owner = renderTiles;
+        auto* raw = new std::vector<std::reference_wrapper<const RenderTile>>();
+        raw->reserve(renderTiles->size());
         for (const auto& renderTile : *renderTiles) {
-            result->emplace_back(renderTile);
+            raw->emplace_back(renderTile);
         }
-        std::sort(result->begin(), result->end(), comp);
-        renderTilesSortedByY = std::move(result);
+        std::sort(raw->begin(), raw->end(), comp);
+        renderTilesSortedByY = RenderTiles(raw, [owner](auto* p) { delete p; });
     }
     return renderTilesSortedByY;
 }
