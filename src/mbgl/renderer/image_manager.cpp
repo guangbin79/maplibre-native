@@ -46,6 +46,7 @@ void ImageManager::addImage(Immutable<style::Image::Impl> image_) {
         requestedImagesCacheSize += image_->image.bytes();
     }
     availableImages.emplace(image_->id);
+    snapshotDirty = true;
     images.emplace(image_->id, std::move(image_));
 }
 
@@ -70,6 +71,8 @@ bool ImageManager::updateImage(Immutable<style::Image::Impl> image_) {
 
     oldImage->second = std::move(image_);
 
+    // updateImage replaces pixel data only; the key set is unchanged, so no snapshot invalidation.
+
     return sizeChanged;
 }
 
@@ -85,6 +88,7 @@ void ImageManager::removeImage(const std::string& id) {
     }
     images.erase(it);
     availableImages.erase(id);
+    snapshotDirty = true;
     updatedImageVersions.erase(id);
 }
 
@@ -177,12 +181,21 @@ const std::set<std::string>& ImageManager::getAvailableImages() const {
     return availableImages;
 }
 
+std::shared_ptr<const std::set<std::string>> ImageManager::getAvailableImagesSnapshot() const {
+    if (snapshotDirty) {
+        availableImagesSnapshot = std::make_shared<const std::set<std::string>>(availableImages);
+        snapshotDirty = false;
+    }
+    return availableImagesSnapshot;
+}
+
 void ImageManager::clear() {
     assert(requestors.empty());
     assert(missingImageRequestors.empty());
 
     images.clear();
     availableImages.clear();
+    snapshotDirty = true;
     updatedImageVersions.clear();
     requestedImages.clear();
     loaded = false;

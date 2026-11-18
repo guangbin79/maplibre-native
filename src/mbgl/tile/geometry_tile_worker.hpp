@@ -14,6 +14,7 @@
 
 #include <atomic>
 #include <memory>
+#include <set>
 
 namespace mbgl {
 
@@ -38,10 +39,10 @@ public:
     ~GeometryTileWorker();
 
     void setLayers(std::vector<Immutable<style::LayerProperties>>,
-                   std::set<std::string> availableImages,
+                   std::shared_ptr<const std::set<std::string>> availableImages,
                    uint64_t correlationID);
     void setData(std::unique_ptr<const GeometryTileData>,
-                 std::set<std::string> availableImages,
+                 std::shared_ptr<const std::set<std::string>> availableImages,
                  uint64_t correlationID);
     void reset(uint64_t correlationID_);
     void setShowCollisionBoxes(bool showCollisionBoxes_, uint64_t correlationID_);
@@ -103,7 +104,7 @@ private:
     ImageMap imageMap;
     ImageMap patternMap;
     ImageVersionMap versionMap;
-    std::set<std::string> availableImages;
+    std::shared_ptr<const std::set<std::string>> availableImages;
 
     bool showCollisionBoxes;
     bool firstLoad = true;

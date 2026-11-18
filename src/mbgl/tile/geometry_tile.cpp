@@ -181,7 +181,7 @@ void GeometryTile::setData(std::unique_ptr<const GeometryTileData> data_) {
 
     ++correlationID;
     worker.self().invoke(
-        &GeometryTileWorker::setData, std::move(data_), imageManager.getAvailableImages(), correlationID);
+        &GeometryTileWorker::setData, std::move(data_), imageManager.getAvailableImagesSnapshot(), correlationID);
 }
 
 void GeometryTile::reset() {
@@ -220,7 +220,7 @@ void GeometryTile::setLayers(const std::vector<Immutable<LayerProperties>>& laye
 
     ++correlationID;
     worker.self().invoke(
-        &GeometryTileWorker::setLayers, std::move(impls), imageManager.getAvailableImages(), correlationID);
+        &GeometryTileWorker::setLayers, std::move(impls), imageManager.getAvailableImagesSnapshot(), correlationID);
 }
 
 void GeometryTile::setShowCollisionBoxes(const bool showCollisionBoxes_) {

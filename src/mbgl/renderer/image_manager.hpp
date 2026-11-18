@@ -4,6 +4,8 @@
 #include <mbgl/util/immutable.hpp>
 
 #include <map>
+#include <memory>
+#include <set>
 #include <string>
 
 namespace mbgl {
@@ -49,6 +51,7 @@ public:
     void reduceMemoryUse();
     void reduceMemoryUseIfCacheSizeExceedsLimit();
     const std::set<std::string>& getAvailableImages() const;
+    std::shared_ptr<const std::set<std::string>> getAvailableImagesSnapshot() const;
 
     ImageVersionMap updatedImageVersions;
 
@@ -68,6 +71,9 @@ private:
     ImageMap images;
     // Mirror of 'ImageMap images;' keys.
     std::set<std::string> availableImages;
+    // Immutable snapshot of 'availableImages', lazily rebuilt when 'snapshotDirty'.
+    mutable std::shared_ptr<const std::set<std::string>> availableImagesSnapshot;
+    mutable bool snapshotDirty = true;
 
     ImageManagerObserver* observer = nullptr;
 };

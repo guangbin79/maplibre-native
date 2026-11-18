@@ -356,3 +356,31 @@ TEST(ImageManager, RemoveUnusedStyleImages) {
     ASSERT_TRUE(imageManager.getImage("1024px") == nullptr);
     ASSERT_FALSE(imageManager.getImage("sprite") == nullptr);
 }
+
+TEST(ImageManager, AvailableImagesSnapshot) {
+    FixtureLog log;
+    ImageManager imageManager;
+
+    auto images = parseSprite(util::read_file("test/fixtures/annotations/emerald.png"),
+                              util::read_file("test/fixtures/annotations/emerald.json"));
+    ASSERT_FALSE(images.empty());
+    const auto firstId = images.front()->id;
+    for (auto& image : images) {
+        imageManager.addImage(image);
+    }
+
+    // Added images are reflected in the snapshot.
+    auto snapshot = imageManager.getAvailableImagesSnapshot();
+    ASSERT_TRUE(snapshot);
+    EXPECT_NE(snapshot->end(), snapshot->find(firstId));
+
+    // Unchanged manager returns the same snapshot (no rebuild).
+    auto snapshotAgain = imageManager.getAvailableImagesSnapshot();
+    EXPECT_EQ(snapshot.get(), snapshotAgain.get());
+
+    // Removal dirties the snapshot: rebuilt without the id, different pointer.
+    imageManager.removeImage(firstId);
+    auto rebuilt = imageManager.getAvailableImagesSnapshot();
+    EXPECT_EQ(rebuilt->end(), rebuilt->find(firstId));
+    EXPECT_NE(snapshot.get(), rebuilt.get());
+}

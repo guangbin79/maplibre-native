@@ -118,7 +118,7 @@ GeometryTileWorker::~GeometryTileWorker() = default;
 */
 
 void GeometryTileWorker::setData(std::unique_ptr<const GeometryTileData> data_,
-                                 std::set<std::string> availableImages_,
+                                 std::shared_ptr<const std::set<std::string>> availableImages_,
                                  uint64_t correlationID_) {
     try {
         data = std::move(data_);
@@ -143,7 +143,7 @@ void GeometryTileWorker::setData(std::unique_ptr<const GeometryTileData> data_,
 }
 
 void GeometryTileWorker::setLayers(std::vector<Immutable<LayerProperties>> layers_,
-                                   std::set<std::string> availableImages_,
+                                   std::shared_ptr<const std::set<std::string>> availableImages_,
                                    uint64_t correlationID_) {
     try {
         layers = std::move(layers_);
@@ -393,7 +393,7 @@ void GeometryTileWorker::parse() {
         // images/glyphs are available to add the features to the buckets.
         if (leaderImpl.getTypeInfo()->layout == LayerTypeInfo::Layout::Required) {
             std::unique_ptr<Layout> layout = LayerManager::get()->createLayout(
-                {parameters, glyphDependencies, imageDependencies, availableImages}, std::move(geometryLayer), group);
+                {parameters, glyphDependencies, imageDependencies, *availableImages}, std::move(geometryLayer), group);
             if (layout->hasDependencies()) {
                 layouts.push_back(std::move(layout));
             } else {
