@@ -46,7 +46,7 @@ void ImageManager::addImage(Immutable<style::Image::Impl> image_) {
         requestedImagesCacheSize += image_->image.bytes();
     }
     availableImages.emplace(image_->id);
-    snapshotDirty = true;
+    publishSnapshot();
     images.emplace(image_->id, std::move(image_));
 }
 
@@ -88,7 +88,7 @@ void ImageManager::removeImage(const std::string& id) {
     }
     images.erase(it);
     availableImages.erase(id);
-    snapshotDirty = true;
+    publishSnapshot();
     updatedImageVersions.erase(id);
 }
 
@@ -182,11 +182,14 @@ const std::set<std::string>& ImageManager::getAvailableImages() const {
 }
 
 std::shared_ptr<const std::set<std::string>> ImageManager::getAvailableImagesSnapshot() const {
-    if (snapshotDirty) {
-        availableImagesSnapshot = std::make_shared<const std::set<std::string>>(availableImages);
-        snapshotDirty = false;
-    }
-    return availableImagesSnapshot;
+    // Read-only handover; rebuilt eagerly on the owning thread at mutation time.
+    return std::atomic_load(&availableImagesSnapshot);
+}
+
+void ImageManager::publishSnapshot() {
+    // Owning thread only: copy the live set, then atomically swap the snapshot.
+    std::atomic_store(&availableImagesSnapshot,
+                      std::make_shared<const std::set<std::string>>(availableImages));
 }
 
 void ImageManager::clear() {
@@ -195,7 +198,7 @@ void ImageManager::clear() {
 
     images.clear();
     availableImages.clear();
-    snapshotDirty = true;
+    publishSnapshot();
     updatedImageVersions.clear();
     requestedImages.clear();
     loaded = false;

@@ -71,9 +71,13 @@ private:
     ImageMap images;
     // Mirror of 'ImageMap images;' keys.
     std::set<std::string> availableImages;
-    // Immutable snapshot of 'availableImages', lazily rebuilt when 'snapshotDirty'.
-    mutable std::shared_ptr<const std::set<std::string>> availableImagesSnapshot;
-    mutable bool snapshotDirty = true;
+    // Immutable snapshot of 'availableImages', rebuilt eagerly on mutation by
+    // the owning thread (publishSnapshot) and handed to other threads via
+    // atomic accessors. Readers never mutate — fixes lazy-build shared_ptr race.
+    std::shared_ptr<const std::set<std::string>> availableImagesSnapshot{
+        std::make_shared<const std::set<std::string>>()};
+
+    void publishSnapshot();
 
     ImageManagerObserver* observer = nullptr;
 };
