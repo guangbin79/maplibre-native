@@ -87,9 +87,10 @@ RenderTiles RenderTileSource::getRenderTiles() const {
         // A layer caches the returned vector across frames while prepare()
         // swaps `renderTiles` — the wrapper targets would dangle. The deleter
         // captures the Immutable copy so storage lives as long as any holder.
-        auto owner = renderTiles;
+        auto tiles = renderTiles;
+        auto owner = tiles;
         auto* raw = new std::vector<std::reference_wrapper<const RenderTile>>();
-        for (const auto& renderTile : *renderTiles) {
+        for (const auto& renderTile : *tiles) {
             if (renderTile.holdForFade()) {
                 continue;
             }
@@ -116,10 +117,11 @@ RenderTiles RenderTileSource::getRenderTilesSortedByYPosition() const {
         // dereferences every wrapper; without the pin a cross-frame Immutable
         // swap frees the storage mid-use (SIGSEGV in introsort, observed on
         // Phytium D3000M after ~70min sim-nav camera follow).
-        auto owner = renderTiles;
+        auto tiles = renderTiles;
+        auto owner = tiles;
         auto* raw = new std::vector<std::reference_wrapper<const RenderTile>>();
-        raw->reserve(renderTiles->size());
-        for (const auto& renderTile : *renderTiles) {
+        raw->reserve(tiles->size());
+        for (const auto& renderTile : *tiles) {
             raw->emplace_back(renderTile);
         }
         std::sort(raw->begin(), raw->end(), comp);
