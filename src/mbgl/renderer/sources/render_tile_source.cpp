@@ -8,7 +8,14 @@
 #include <mbgl/renderer/tile_render_data.hpp>
 #include <mbgl/tile/vector_tile.hpp>
 #include <mbgl/util/constants.hpp>
+#include <mbgl/util/logging.hpp>
 #include <mbgl/util/math.hpp>
+
+#include <algorithm>
+#include <cstdio>
+#include <cstdint>
+#include <utility>
+#include <vector>
 
 namespace mbgl {
 
@@ -101,22 +108,22 @@ RenderTiles RenderTileSource::getRenderTiles() const {
     return filteredRenderTiles;
 }
 
+TileSortKey computeTileSortKey(const UnwrappedTileID& id, float bearing) {
+    const auto rotated = util::rotate(Point<float>(static_cast<float>(id.canonical.x),
+                                                   static_cast<float>(id.canonical.y)),
+                                      bearing);
+    return TileSortKey{static_cast<int32_t>(id.canonical.z), rotated.y, rotated.x, id.canonical.x,
+                       id.canonical.y};
+}
+
 RenderTiles RenderTileSource::getRenderTilesSortedByYPosition() const {
     if (!renderTilesSortedByY) {
-        const auto comp = [bearing = this->bearing](const RenderTile& a, const RenderTile& b) {
-            Point<float> pa(static_cast<float>(a.id.canonical.x), static_cast<float>(a.id.canonical.y));
-            Point<float> pb(static_cast<float>(b.id.canonical.x), static_cast<float>(b.id.canonical.y));
-
-            auto par = util::rotate(pa, bearing);
-            auto pbr = util::rotate(pb, bearing);
-
-            return std::tie(b.id.canonical.z, par.y, par.x) < std::tie(a.id.canonical.z, pbr.y, pbr.x);
-        };
-
-        // Ownership pin: same lifetime hole as getRenderTiles() — sort below
-        // dereferences every wrapper; without the pin a cross-frame Immutable
-        // swap frees the storage mid-use (SIGSEGV in introsort, observed on
-        // Phytium D3000M after ~70min sim-nav camera follow).
+        // Ownership pin: same lifetime hole as getRenderTiles() — the sort and
+        // the returned wrappers dereference RenderTile storage owned by the
+        // `renderTiles` Immutable member; the deleter captures a copy so the
+        // storage outlives every holder across prepare() swaps (SIGSEGV in
+        // introsort, observed on Phytium D3000M after ~70min sim-nav camera
+        // follow).
         auto tiles = renderTiles;
         auto owner = tiles;
         auto* raw = new std::vector<std::reference_wrapper<const RenderTile>>();
@@ -124,7 +131,53 @@ RenderTiles RenderTileSource::getRenderTilesSortedByYPosition() const {
         for (const auto& renderTile : *tiles) {
             raw->emplace_back(renderTile);
         }
-        std::sort(raw->begin(), raw->end(), comp);
+
+        // O(n) range sentinel: the key computation below dereferences every
+        // wrapper, so validate each pointer against the pinned Immutable
+        // storage first; on violation log it and rebuild `raw` from the
+        // storage range — never dereference the bad pointer, never crash.
+        {
+            const auto begin = reinterpret_cast<std::uintptr_t>(tiles->data());
+            const auto end = begin + tiles->size() * sizeof(RenderTile);
+            bool inRange = true;
+            for (const auto& wrapper : *raw) {
+                const auto address = reinterpret_cast<std::uintptr_t>(&wrapper.get());
+                if (address < begin || address >= end) {
+                    char message[256];
+                    std::snprintf(message,
+                                  sizeof(message),
+                                  "RenderTile sort sentinel: out-of-range RenderTile* %p (vector "
+                                  "bounds [%p, %p)); rebuilding wrappers from Immutable",
+                                  reinterpret_cast<void*>(address),
+                                  reinterpret_cast<void*>(begin),
+                                  reinterpret_cast<void*>(end));
+                    Log::Error(Event::General, message);
+                    inRange = false;
+                    break;
+                }
+            }
+            if (!inRange) {
+                raw->clear();
+                for (const auto& renderTile : *tiles) {
+                    raw->emplace_back(renderTile);
+                }
+            }
+        }
+
+        // Precomputed-key total-order sort: each tile's key is computed exactly
+        // once (recomputing rotated floats inside a std::sort comparator made
+        // the order inconsistent); TileSortKey's integer tie-break keeps the
+        // order strict and total, so default operator< is safe here.
+        std::vector<std::pair<TileSortKey, const RenderTile*>> keyed;
+        keyed.reserve(raw->size());
+        for (const auto& wrapper : *raw) {
+            keyed.emplace_back(computeTileSortKey(wrapper.get().id, bearing), &wrapper.get());
+        }
+        std::sort(keyed.begin(), keyed.end());
+        raw->clear();
+        for (const auto& entry : keyed) {
+            raw->emplace_back(*entry.second);
+        }
         renderTilesSortedByY = RenderTiles(raw, [owner](auto* p) { delete p; });
     }
     return renderTilesSortedByY;

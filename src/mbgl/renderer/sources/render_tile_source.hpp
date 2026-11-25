@@ -5,7 +5,40 @@
 #include <mbgl/renderer/tile_pyramid.hpp>
 #include <mbgl/style/sources/vector_source_impl.hpp>
 
+#include <cstdint>
+
 namespace mbgl {
+
+/**
+ * @brief Precomputed total-order sort key for the tile draw order used by
+ * getRenderTilesSortedByYPosition().
+ *
+ * Rotated positions are computed once per tile instead of being recomputed
+ * inside a std::sort comparator; the trailing integer tie-break (canonical
+ * x/y) makes operator< a strict total order — the per-comparison float
+ * lambda it replaces was inconsistent and crashed introsort.
+ */
+struct TileSortKey {
+    int32_t z;   // tile zoom, sorted descending
+    float rotY;  // rotated y position, descending
+    float rotX;  // rotated x position, descending
+    uint32_t cx; // canonical x tie-break, ascending
+    uint32_t cy; // canonical y tie-break, ascending
+};
+
+inline bool operator<(const TileSortKey& lhs, const TileSortKey& rhs) {
+    if (lhs.z != rhs.z) return lhs.z > rhs.z;
+    if (lhs.rotY != rhs.rotY) return lhs.rotY > rhs.rotY;
+    if (lhs.rotX != rhs.rotX) return lhs.rotX > rhs.rotX;
+    if (lhs.cx != rhs.cx) return lhs.cx < rhs.cx;
+    return lhs.cy < rhs.cy;
+}
+
+/**
+ * @brief Computes the sort key of a tile for the given bearing, with the same
+ * rotation math the frame draw order uses.
+ */
+TileSortKey computeTileSortKey(const UnwrappedTileID& id, float bearing);
 
 /**
  * @brief Base class for render sources that provide render tiles.
