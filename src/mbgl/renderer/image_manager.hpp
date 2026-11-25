@@ -50,7 +50,6 @@ public:
     void notifyIfMissingImageAdded();
     void reduceMemoryUse();
     void reduceMemoryUseIfCacheSizeExceedsLimit();
-    const std::set<std::string>& getAvailableImages() const;
     std::shared_ptr<const std::set<std::string>> getAvailableImagesSnapshot() const;
 
     ImageVersionMap updatedImageVersions;

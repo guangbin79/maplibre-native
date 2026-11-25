@@ -177,10 +177,6 @@ void ImageManager::reduceMemoryUseIfCacheSizeExceedsLimit() {
     }
 }
 
-const std::set<std::string>& ImageManager::getAvailableImages() const {
-    return availableImages;
-}
-
 std::shared_ptr<const std::set<std::string>> ImageManager::getAvailableImagesSnapshot() const {
     // Read-only handover; rebuilt eagerly on the owning thread at mutation time.
     return std::atomic_load(&availableImagesSnapshot);
