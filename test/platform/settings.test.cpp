@@ -1,6 +1,11 @@
 #include <gtest/gtest.h>
 #include <mbgl/platform/settings.hpp>
 
+#include <future>
+#include <string>
+#include <thread>
+#include <vector>
+
 using namespace mbgl;
 using namespace mbgl::platform;
 
@@ -45,4 +50,53 @@ TEST(Settings, SetAndGet) {
 
     settings.set(values);
     EXPECT_EQ(values, settings.get(keys));
+}
+
+// Regression test for the ThreadSanitizer-reported start-up race: worker
+// threads (see util/thread_pool.cpp) hit the singleton accessor concurrently
+// at first use and raced its lazy initialization.
+TEST(Settings, ConcurrentInstanceAccess) {
+    constexpr std::size_t threadCount = 8;
+    constexpr int iterations = 100;
+
+    std::promise<void> barrier;
+    const std::shared_future<void> start = barrier.get_future().share();
+
+    std::vector<mapbox::base::Value> firstReads(threadCount);
+    // Not vector<bool>: its bit packing makes distinct indices share a word,
+    // so concurrent writes race (TSan-detectable).
+    std::vector<int> roundtrips(threadCount, 0);
+    std::vector<std::thread> threads;
+    threads.reserve(threadCount);
+    for (std::size_t i = 0; i < threadCount; ++i) {
+        threads.emplace_back([start, &firstReads, &roundtrips, i] {
+            start.wait();
+            // First use may happen concurrently from any of these threads.
+            auto& settings = Settings::getInstance();
+            firstReads[i] = settings.get(EXPERIMENTAL_THREAD_PRIORITY_WORKER);
+
+            const std::string key = "concurrent_settings_test_key_" + std::to_string(i);
+            const mapbox::base::Value value{static_cast<double>(i)};
+            bool roundtrip = true;
+            for (int iteration = 0; iteration < iterations; ++iteration) {
+                settings.set(key, value);
+                roundtrip = roundtrip && settings.get(key) == value;
+            }
+            roundtrips[i] = roundtrip;
+        });
+    }
+    barrier.set_value();
+    for (auto& thread : threads) {
+        thread.join();
+    }
+
+    // All threads must have observed the same value on first read.
+    for (std::size_t i = 1; i < threadCount; ++i) {
+        EXPECT_EQ(firstReads.front(), firstReads[i]);
+    }
+    for (std::size_t i = 0; i < threadCount; ++i) {
+        EXPECT_TRUE(roundtrips[i]);
+        EXPECT_EQ(mapbox::base::Value{static_cast<double>(i)},
+                  Settings::getInstance().get("concurrent_settings_test_key_" + std::to_string(i)));
+    }
 }

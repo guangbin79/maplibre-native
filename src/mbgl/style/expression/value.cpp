@@ -133,7 +133,9 @@ mbgl::Value ValueConverter<mbgl::Value>::fromExpressionValue(const Value& value)
             // Serialization strategy for Formatted objects is to return the
             // constant expression that would generate them.
             std::vector<mbgl::Value> serialized;
-            static std::string formatOperator("format");
+            // Constant-initialized (no lazy dynamic init): thread-safe by
+            // construction even when built with -fno-threadsafe-statics.
+            static const char formatOperator[] = "format";
             serialized.emplace_back(formatOperator);
             for (const auto& section : formatted.sections) {
                 if (section.image) {

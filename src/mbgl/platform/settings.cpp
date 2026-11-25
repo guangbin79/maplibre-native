@@ -25,8 +25,14 @@ Settings::Settings()
     : impl(std::make_unique<Impl>()) {}
 
 Settings& Settings::getInstance() noexcept {
-    static Settings instance;
-    return instance;
+    // call_once (unlike a guarded function-local static) stays thread-safe
+    // even when built with -fno-threadsafe-statics, and the deliberately
+    // leaked instance can never be observed mid-destruction by worker
+    // threads that outlive static destruction at process exit.
+    static std::once_flag once;
+    static Settings* instance = nullptr;
+    std::call_once(once, [] { instance = new Settings(); });
+    return *instance;
 }
 
 void Settings::set(const std::string& key, mapbox::base::Value value) noexcept {

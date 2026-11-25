@@ -54,6 +54,7 @@ add_library(
     ${PROJECT_SOURCE_DIR}/test/style/conversion/tileset.test.cpp
     ${PROJECT_SOURCE_DIR}/test/style/expression/expression.test.cpp
     ${PROJECT_SOURCE_DIR}/test/style/expression/util.test.cpp
+    ${PROJECT_SOURCE_DIR}/test/style/expression/value.test.cpp
     ${PROJECT_SOURCE_DIR}/test/style/filter.test.cpp
     ${PROJECT_SOURCE_DIR}/test/style/properties.test.cpp
     ${PROJECT_SOURCE_DIR}/test/style/property_expression.test.cpp
